@@ -1,0 +1,85 @@
+        LIST    P=10F202
+        INCLUDE p10f202.inc
+
+FLAG0   EQU     08H                 ;0-POWER,1-MCLR,2-GP0,3-GP1
+
+        ORG     0000H
+        MOVLW   11011100B
+        OPTION
+        MOVLW   11111000B
+        MOVWF   GPIO,f
+        TRIS    GPIO
+
+STATCHECK
+        BTFSC   STATUS,TO           ;JESLI POWER ON USTAW FLAGE
+        GOTO    POWERRESET
+        BTFSS   STATUS,TO           ;JESLI WDT SPRAWDZ JAKI EVENT
+        GOTO    EVENTCHECK
+        BTFSS   STATUS,GPWUF        ;JESLI RESET MCLR
+        GOTO    MCLRESET
+        BTFSC   STATUS,GPWUF        ;JESLI PINCHANGE
+        GOTO    GPCHECK
+
+
+
+
+
+POWERRESET
+        MOVLW   11111110B
+        MOVWF   FLAG0,F
+        MOVLW   11111000B
+        MOVWF   GPIO,F
+        SLEEP
+MCLRESET
+        MOVLW   11111101B
+        MOVWF   FLAG0,F
+        MOVLW   11111111B
+        MOVWF   GPIO,F              ;USTAW GPIO W TRYB WEJ?CIOWY?
+        TRIS    GPIO
+        MOVLW   01011100B           ;W??CZ PIN CHANGE WAKE UP
+        OPTION
+        SLEEP
+GPCHECK
+        BTFSC   GPIO,0               ;JESLI GP0=0 skip
+        MOVLW   11111011B
+        BTFSC   GPIO,1
+        MOVLW   11110111B
+        MOVWF   FLAG0,F              ;WPISZ NA FLAGE KTORY PRZYCISK
+        MOVLW   11011100B           ;W??CZ PIN CHANGE WAKE UP
+        OPTION
+        MOVLW   11111000B
+        MOVWF   GPIO,F
+        TRIS    GPIO
+        SLEEP
+EVENTCHECK
+        BTFSS   FLAG0,0
+        GOTO    CYCLE0
+        BTFSS   FLAG0,1
+        GOTO    WAITFORINPUT
+        BTFSS   FLAG0,2
+        GOTO    CYCLE1
+        BTFSS   FLAG0,3
+        GOTO    CYCLE2
+
+
+
+WAITFORINPUT
+        SLEEP
+
+
+CYCLE0
+        INCF    GPIO,F
+        SLEEP
+CYCLE1
+        DECF    GPIO,F
+        SLEEP
+CYCLE2
+        INCF    GPIO,F
+        INCF    GPIO,F
+        INCF    GPIO,F
+        SLEEP
+
+        END
+
+
+
